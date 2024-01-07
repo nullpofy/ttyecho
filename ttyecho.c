@@ -21,13 +21,14 @@ int main (int argc, char *argv[]) {
     int i, fd;
     int devno, commandno, newline;
     int mem_len;
+    int c;
     devno = 1; commandno = 2; newline = 0;
-    if (argc < 3) {
+    if (argc < 2) {
         print_help(argv[0]);
     }
-    if (argc > 3 && argv[1][0] == '-' && argv[1][1] == 'n') {
+    if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'n') {
         devno = 2; commandno = 3; newline=1;
-    } else if (argc > 3 && argv[1][0] == '-' && argv[1][1] != 'n') {
+    } else if (argc > 1 && argv[1][0] == '-' && argv[1][1] != 'n') {
         printf("Invalid Option\n");
         print_help(argv[0]);
     }
@@ -37,21 +38,32 @@ int main (int argc, char *argv[]) {
         exit(1);
     }
     mem_len = 0;
-    for ( i = commandno; i < argc; i++ ) {
-        mem_len += strlen(argv[i]) + 2;
-        if ( i > commandno ) {
-            cmd = (char *)realloc((void *)cmd, mem_len);
-        } else { //i == commandno
-            cmd = (char *)malloc(mem_len);
-        }
+    if (argv[commandno]) {
+        for ( i = commandno; i < argc; i++ ) {
+            mem_len += strlen(argv[i]) + 2;
+            if ( i > commandno ) {
+                cmd = (char *)realloc((void *)cmd, mem_len);
+            } else { //i == commandno
+                cmd = (char *)malloc(mem_len);
+            }
 
-        strcat(cmd, argv[i]);
-        // strcat(cmd, " ");
+            strcat(cmd, argv[i]);
+            strcat(cmd, " ");
+        }
+      if (newline == 0)
+            usleep(225000);
+        for (i = 0; cmd[i]; i++)
+            ioctl (fd, TIOCSTI, cmd+i);
+    } else {
+        while ((c = getchar()) != EOF) {
+              ioctl(fd, TIOCSTI, &c);
+        }
+        if (newline == 1)
+              ioctl (fd, TIOCSTI, nl);
+        close(fd);
+        free((void *)cmd);
+        exit (0);
     }
-  if (newline == 0)
-        usleep(225000);
-    for (i = 0; cmd[i]; i++)
-        ioctl (fd, TIOCSTI, cmd+i);
     if (newline == 1)
         ioctl (fd, TIOCSTI, nl);
     close(fd);
